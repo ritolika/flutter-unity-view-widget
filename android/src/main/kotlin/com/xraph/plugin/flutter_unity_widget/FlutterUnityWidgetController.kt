@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
-import android.content.Intent
 import android.graphics.Color
 import android.os.Build
 import android.os.Handler
@@ -57,7 +56,7 @@ class FlutterUnityWidgetController(
         if (context != null) tempContext = context
         // set layout view
         view = FrameLayout(tempContext)
-        view.setBackgroundColor(Color.TRANSPARENT)
+        view.setBackgroundColor(Color.WHITE)
 
         // setup method channel
         methodChannel = MethodChannel(binaryMessenger, "plugin.xraph.com/unity_view_$id")
@@ -66,7 +65,7 @@ class FlutterUnityWidgetController(
         // Set unity listener
         UnityPlayerUtils.addUnityEventListener(this)
 
-        if(UnityPlayerUtils.unityPlayer == null) {
+        if(UnityPlayerUtils.unityFrameLayout == null) {
             createPlayer()
             refocusUnity()
         } else if(!UnityPlayerUtils.unityLoaded) {
@@ -107,7 +106,7 @@ class FlutterUnityWidgetController(
     override fun onMethodCall(methodCall: MethodCall, result: MethodChannel.Result) {
         when (methodCall.method) {
             "unity#waitForUnity" -> {
-                if (UnityPlayerUtils.unityPlayer != null) {
+                if (UnityPlayerUtils.unityFrameLayout != null) {
                     result.success(null)
                     return
                 }
@@ -121,7 +120,7 @@ class FlutterUnityWidgetController(
                 result.success(null)
             }
             "unity#isReady" -> {
-                result.success(UnityPlayerUtils.unityPlayer != null)
+                result.success(UnityPlayerUtils.unityFrameLayout != null)
             }
             "unity#isLoaded" -> {
                 result.success(UnityPlayerUtils.unityLoaded)
@@ -140,10 +139,6 @@ class FlutterUnityWidgetController(
             "unity#pausePlayer" -> {
                 invalidateFrameIfNeeded()
                 UnityPlayerUtils.pause()
-                result.success(true)
-            }
-            "unity#openInNativeProcess" -> {
-                openNativeUnity()
                 result.success(true)
             }
             "unity#resumePlayer" -> {
@@ -167,8 +162,8 @@ class FlutterUnityWidgetController(
                 result.success(true)
             }
             "unity#quitPlayer" -> {
-                if (UnityPlayerUtils.unityPlayer != null) {
-                    UnityPlayerUtils.unityPlayer!!.destroy()
+                if (UnityPlayerUtils.unityFrameLayout != null) {
+                    UnityPlayerUtils.unityPlayerForActivityOrService!!.destroy()
                 }
                 result.success(true)
             }
@@ -265,17 +260,6 @@ class FlutterUnityWidgetController(
         this.lifecycleProvider.getLifecycle().addObserver(this)
     }
 
-    private fun openNativeUnity() {
-        val activity = getActivity(null)
-        if (activity != null) {
-            val intent = Intent(getActivity(null)!!.applicationContext, OverrideUnityActivity::class.java)
-            intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
-            intent.putExtra("fullscreen", options.fullscreenEnabled)
-            intent.putExtra("flutterActivity", activity.javaClass)
-            activity.startActivityForResult(intent, 1)
-        }
-    }
-
     private fun destroyUnityViewIfNecessary() {
         if (options.unloadOnDispose) {
             UnityPlayerUtils.unload()
@@ -331,15 +315,15 @@ class FlutterUnityWidgetController(
 
 
     private fun attachToView() {
-        if (UnityPlayerUtils.unityPlayer == null) return
+        if (UnityPlayerUtils.unityFrameLayout == null) return
         Log.d(LOG_TAG, "Attaching unity to view")
 
-        if (UnityPlayerUtils.unityPlayer!!.parent != null) {
-            (UnityPlayerUtils.unityPlayer!!.parent as ViewGroup).removeView(UnityPlayerUtils.unityPlayer)
+        if (UnityPlayerUtils.unityFrameLayout!!.parent != null) {
+            (UnityPlayerUtils.unityFrameLayout!!.parent as ViewGroup).removeView(UnityPlayerUtils.unityFrameLayout)
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            UnityPlayerUtils.unityPlayer!!.z = -1f
+            UnityPlayerUtils.unityFrameLayout!!.z = -1f
         }
 
         // add unity to view
@@ -356,7 +340,7 @@ class FlutterUnityWidgetController(
     }
 
     fun reattachToView() {
-        if (UnityPlayerUtils.unityPlayer!!.parent != view) {
+        if (UnityPlayerUtils.unityFrameLayout!!.parent != view) {
             this.attachToView()
             Handler(Looper.getMainLooper()).post {
                 methodChannel.invokeMethod("events#onViewReattached", null)
@@ -368,7 +352,7 @@ class FlutterUnityWidgetController(
     /// Reference solution to Google Maps implementation
     /// https://github.com/flutter/plugins/blob/b0bfab678f83bebd49e9f9d0a83fe9b40774e853/packages/google_maps_flutter/google_maps_flutter/android/src/main/java/io/flutter/plugins/googlemaps/GoogleMapController.java#L154
     private fun invalidateFrameIfNeeded() {
-        if (UnityPlayerUtils.unityPlayer == null || loadedCallbackPending) {
+        if (UnityPlayerUtils.unityFrameLayout == null || loadedCallbackPending) {
             return
         }
 

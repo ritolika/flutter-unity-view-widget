@@ -4,14 +4,13 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.os.Build
 import android.util.Log
-import android.view.View
 import android.view.ViewGroup
-import android.view.ViewGroup.LayoutParams
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.WindowManager
 import android.widget.FrameLayout
+import com.unity3d.player.CustomUnityPlayerForActivityOrService
 import com.unity3d.player.IUnityPlayerLifecycleEvents
 import com.unity3d.player.UnityPlayer
+import com.unity3d.player.UnityPlayerForActivityOrService
 import java.util.concurrent.CopyOnWriteArraySet
 
 
@@ -21,7 +20,8 @@ class UnityPlayerUtils {
         private const val LOG_TAG = "UnityPlayerUtils"
 
         var controllers: ArrayList<FlutterUnityWidgetController> = ArrayList()
-        var unityPlayer: CustomUnityPlayer? = null
+        var unityFrameLayout: FrameLayout? = null // TODO CustomUnityFrameLayout
+        var unityPlayerForActivityOrService: CustomUnityPlayerForActivityOrService? = null
         var activity: Activity? = null
         var prevActivityRequestedOrientation: Int? = null
 
@@ -35,8 +35,8 @@ class UnityPlayerUtils {
 
         fun focus() {
             try {
-                unityPlayer!!.windowFocusChanged(unityPlayer!!.requestFocus())
-                unityPlayer!!.resume()
+                unityPlayerForActivityOrService!!.windowFocusChanged(unityFrameLayout!!.requestFocus())
+                unityPlayerForActivityOrService!!.resume()
             } catch (e: Exception) {
                 Log.e(LOG_TAG, e.toString())
             }
@@ -51,18 +51,19 @@ class UnityPlayerUtils {
                 throw java.lang.Exception("Unity activity is null")
             }
 
-            if (unityPlayer != null) {
+            if (unityFrameLayout != null) {
                 unityLoaded = true
-                unityPlayer!!.bringToFront()
-                unityPlayer!!.requestLayout()
-                unityPlayer!!.invalidate()
+                unityFrameLayout!!.bringToFront()
+                unityFrameLayout!!.requestLayout()
+                unityFrameLayout!!.invalidate()
                 focus()
                 callback?.onReady()
                 return
             }
 
             try {
-                unityPlayer = CustomUnityPlayer(activity!!, ule)
+                unityPlayerForActivityOrService = CustomUnityPlayerForActivityOrService(activity!!, ule)
+                unityFrameLayout = unityPlayerForActivityOrService!!.frameLayout
                 // unityPlayer!!.z = (-1).toFloat()
                 // addUnityViewToBackground(activity!!)
                 unityLoaded = true
@@ -87,8 +88,8 @@ class UnityPlayerUtils {
 
         fun pause() {
             try {
-                if (unityPlayer != null) {
-                    unityPlayer!!.pause()
+                if (unityFrameLayout != null) {
+                    unityPlayerForActivityOrService!!.pause()
                     unityPaused = true
                 }
             } catch (e: Exception) {
@@ -98,8 +99,8 @@ class UnityPlayerUtils {
 
         fun resume() {
             try {
-                if (unityPlayer != null) {
-                    unityPlayer!!.resume()
+                if (unityFrameLayout != null) {
+                    unityPlayerForActivityOrService!!.resume()
                     unityPaused = false
                 }
             } catch (e: Exception) {
@@ -109,8 +110,8 @@ class UnityPlayerUtils {
 
         fun unload() {
             try {
-                if (unityPlayer != null) {
-                    unityPlayer!!.unload()
+                if (unityFrameLayout != null) {
+                    unityPlayerForActivityOrService!!.unload()
                     unityLoaded = false
                 }
             } catch (e: Exception) {
@@ -120,8 +121,8 @@ class UnityPlayerUtils {
 
         fun quitPlayer() {
             try {
-                if (unityPlayer != null) {
-                    unityPlayer!!.quit()
+                if (unityFrameLayout != null) {
+                    unityPlayerForActivityOrService!!.quit()
                     unityLoaded = false
                 }
             } catch (e: Error) {
@@ -167,16 +168,16 @@ class UnityPlayerUtils {
         }
 
         private fun shakeActivity() {
-            unityPlayer?.windowFocusChanged(true)
+            unityPlayerForActivityOrService?.windowFocusChanged(true)
             if (prevActivityRequestedOrientation != null) {
                 activity?.requestedOrientation = prevActivityRequestedOrientation!!
             }
         }
 
         fun removePlayer(controller: FlutterUnityWidgetController) {
-            if (unityPlayer!!.parent == controller.view) {
+            if (unityFrameLayout!!.parent == controller.view) {
                 if (controllers.isEmpty()) {
-                    (controller.view as FrameLayout).removeView(unityPlayer)
+                    (controller.view as FrameLayout).removeView(unityFrameLayout)
                     pause()
                     shakeActivity()
                 } else {
@@ -193,21 +194,21 @@ class UnityPlayerUtils {
              val layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT)
 //             val layoutParams = ViewGroup.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT)
 //            val layoutParams = ViewGroup.LayoutParams(570, 770)
-            group.addView(unityPlayer, layoutParams)
+            group.addView(unityFrameLayout, layoutParams)
         }
 
         fun addUnityViewToBackground() {
-            if (unityPlayer == null) {
+            if (unityFrameLayout == null) {
                 return
             }
-            if (unityPlayer!!.parent != null) {
-                (unityPlayer!!.parent as ViewGroup).removeView(unityPlayer)
+            if (unityFrameLayout!!.parent != null) {
+                (unityFrameLayout!!.parent as ViewGroup).removeView(unityFrameLayout)
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                unityPlayer!!.z = -1f
+                unityFrameLayout!!.z = -1f
             }
             val layoutParams = ViewGroup.LayoutParams(1, 1)
-            activity!!.addContentView(unityPlayer, layoutParams)
+            activity!!.addContentView(unityFrameLayout, layoutParams)
         }
     }
 }
