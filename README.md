@@ -109,6 +109,9 @@ These instructions assume you are using a new Unity project. If you open the exa
   - (iOS) Select **Target SDK** depending on where you will run your app (simulator or physical device).  
     We recommend starting with a physical device and the `Device SDK` setting, due to limited simulator support.
 
+  - (Web) Set <b>Publishing settings > Compression format</b> to Brotli or Disabled.  
+  Some users report that Unity gets stuck on the loading screen with the Gzip setting, due to MIME type errors.
+
   <img src="https://raw.githubusercontent.com/juicycleff/flutter-unity-view-widget/master/files/Screenshot%202019-03-27%2007.31.55.png" width="400" />
 
 5. In **File > Build Settings**, make sure to have at least 1 scene added to your build.
@@ -324,6 +327,13 @@ allprojects {
 ![gif](https://github.com/juicycleff/flutter-unity-view-widget/blob/master/files/ar-demo.gif?raw=true)
 
  The following setup for AR is done after making an export from Unity.
+
+
+<b>Warning: The `XR Plugin Management` package version `4.3.1 - 4.3.3` has bug that breaks Android exports. </b>
+
+- The bug accidentally deletes your AndroidManifest.xml file after each build, resulting in a broken export.  
+Switch to version `4.2.2` or `4.4` to avoid this.  
+
 <details>
  <summary>:information_source: <b>AR Foundation Android</b></summary>
 
@@ -344,7 +354,7 @@ allprojects {
 
 ```diff
      <dict>
-+        <key>Privacy - Camera Usage Description</key>
++        <key>NSCameraUsageDescription</key>
 +        <string>$(PRODUCT_NAME) uses Cameras</string>
      </dict>
 ```
@@ -591,6 +601,7 @@ class _MyAppState extends State<MyApp> {
                 bottom: 20,
                 left: 20,
                 right: 20,
+                // <You need a PointerInterceptor here on web>
                 child: Card(
                   elevation: 10,
                   child: Column(
@@ -885,17 +896,35 @@ Flutter on default doesn't support `--flavor` for building web. But you can set 
 
 ### Web GL
 
-> If you develop and ship Flutter with Unity WebGL then you will first notice, that stacked Widgets over your UnityWidget are not tappable!
-
-This is actually a Flutter related Issue (See: https://github.com/flutter/flutter/issues/72273).
-
-To solve this, Flutter-Team already got a solution for this. Use: [PointerInterceptor](https://pub.dev/packages/pointer_interceptor)!
+Flutter widgets stacked on top of the UnityWidget will not register clicks or taps. This is a [Flutter issue](https://github.com/flutter/flutter/issues/72273) and can be solved by using the  [PointerInterceptor](https://pub.dev/packages/pointer_interceptor) package.
 
 Example usage:
 
-![PointerInterceptor](https://github.com/juicycleff/flutter-unity-view-widget/blob/master/files/PointerInterceptor.png?raw=true)
+```dart
+Stack(
+  children: [
+    UnityWidget(
+      onUnityCreated: onUnityCreated,
+      onUnityMessage: onUnityMessage,
+      onUnitySceneLoaded: onUnitySceneLoaded,
+    ),
+    Positioned(
+      bottom: 20,
+      left: 20,
+      right: 20,
+      child: PointerInterceptor(
+        child: ElevatedButton(
+          onPressed: () {
+            // do something
+          },
+          child: const Text('Example button'),
+        ),
+      ),
+    ),
+```
 
-Note: We already integrated this into our [Examples](/example/lib/screens/) in the `/example` folder.
+
+We already integrated this into our [Examples](/example/lib/screens/) in the `/example` folder.
 
 
 #### Sponsors
