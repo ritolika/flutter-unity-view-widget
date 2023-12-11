@@ -12,7 +12,7 @@ import com.unity3d.player.UnityPlayerForActivityOrService
 import com.xraph.plugin.flutter_unity_widget.UnityPlayerUtils
 
 @SuppressLint("NewApi")
-internal class CustomUnityFrameLayout(context: Context, player: UnityPlayerForActivityOrService) : com.unity3d.player.t(context, player) {
+internal class CustomUnityFrameLayout(context: Context, player: UnityPlayerForActivityOrService) : com.unity3d.player.u(context, player) {
 
     companion object {
         internal const val LOG_TAG = "CustomUnityPlayer"

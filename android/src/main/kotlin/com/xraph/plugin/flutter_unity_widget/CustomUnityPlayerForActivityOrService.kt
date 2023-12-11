@@ -19,4 +19,8 @@ public class CustomUnityPlayerForActivityOrService : UnityPlayerForActivityOrSer
     override fun initialize(frameLayout: FrameLayout) {
         super.initialize(CustomUnityFrameLayout(frameLayout.context, this))
     }
+
+    fun quit() {
+        super.destroy() // Might be shutdown
+    }
 }

@@ -42,7 +42,7 @@ class OverrideUnityActivity : UnityPlayerActivity() {
 
     override fun onLowMemory() {
         super.onLowMemory()
-        mUnityPlayer?.lowMemory()
+//        mUnityPlayer?.lowMemory()
     }
 
     override fun onNewIntent(intent: Intent) {
