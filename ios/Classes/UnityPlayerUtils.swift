@@ -184,7 +184,7 @@ var sharedApplication: UIApplication?
         } else if notification?.name == UIApplication.willTerminateNotification {
             unityAppController?.applicationWillTerminate(application)
         } else if notification?.name == UIApplication.didReceiveMemoryWarningNotification {
-            unityAppController?.applicationDidReceiveMemoryWarning(application)
+            // unityAppController?.applicationDidReceiveMemoryWarning(application)
         }
     }
 
